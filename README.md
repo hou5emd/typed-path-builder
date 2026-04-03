@@ -1,16 +1,17 @@
 # typed-path-builder
 
-This allow you to generate a statically typed paths from a simple object. For example, if you specify `path` with `react-router`, you can pass the predefined URL info without typo.
+Generate statically typed path and route builders from a simple config object. This is useful when working with routers such as `react-router`, where you want predefined URL structures without string typos.
 
+[Русский](./README-ru.md)
 [日本語](./README-ja.md)
 
 ## Usage
 
 ### Define config object
 
-We define URLs as an object.
+Define your URLs as an object.
 
-For example, if URLs in your app are as below:
+For example, if your application has the following URLs:
 
 ```
 /foo
@@ -41,28 +42,31 @@ const routeConfig = {
 const [path, route] = createTypedPathBuilder(routeConfig);
 ```
 
-The end of the URL puts an empty object (`{}`). Also, if you want to deal with path parameters, the property names in that hierarchy should start with `":"`.
+Use an empty object (`{}`) for terminal segments. If you need path parameters, start the property name with `":"`.
 
-### path builder
+### Path builder
 
-The `path` object received above is an object that generates path information based on `config`.
-
-```ts
-path.foo.fooId.bar._build() // => "/foo/:fooId/bar"
-```
-
-### route builder
-
-The `route` object received above is an object that generates route information based on `config`.
-Properties that start with `":"`, such as `":fooId"`, are functions in the route builder.
+The `path` object generates template paths from the config.
 
 ```ts
-route.foo.fooId("id")._build() // => "/foo/id"
+path.foo.fooId.bar.build() // => "/foo/:fooId/bar"
+path.foo.fooId.bar.relativeTo(path.foo).build() // => ":fooId/bar"
 ```
 
-## query parameters
+`relativeTo(base)` returns only a builder, so it should be used directly before `.build()`.
 
-If you want to include query parameters, put a property called `_queries`.
+### Route builder
+
+The `route` object generates concrete routes from the config.
+Properties that start with `":"`, such as `":fooId"`, become functions in the route builder.
+
+```ts
+route.foo.fooId("id").build() // => "/foo/id"
+```
+
+## Query parameters
+
+To include query parameters, add a `_queries` property.
 
 ```ts
 const withQueries = {
@@ -79,7 +83,7 @@ const withQueries = {
 
 const [, route] = createTypedPathBuilder(withQueries);
 
-route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" })._build(); // => "/foo/id?param1=value1&param3=value3"
+route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" }).build(); // => "/foo/id?param1=value1&param3=value3"
 ```
 
-`_queries` becomes a function in the route builder and accepts a query parameter object as an argument type-safely.
+`_queries` becomes a function in the route builder and accepts a query parameter object in a type-safe way.
