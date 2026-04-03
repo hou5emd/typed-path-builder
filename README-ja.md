@@ -47,7 +47,7 @@ URL の終端は空のオブジェクト (`{}`) を置きます。また path pa
 上で受け取った `path` オブジェクトは、`config` を基にパス情報を生成するオブジェクトです。
 
 ```ts
-path.foo.fooId.bar._build() // => "/foo/:fooId/bar"
+path.foo.fooId.bar.build() // => "/foo/:fooId/bar"
 ```
 
 ### route builder
@@ -56,7 +56,7 @@ path.foo.fooId.bar._build() // => "/foo/:fooId/bar"
 `":fooId"` のような `":"` から始まるプロパティは route builder では関数になります。
 
 ```ts
-route.foo.fooId("id")._build() // => "/foo/id"
+route.foo.fooId("id").build() // => "/foo/id"
 ```
 
 ## クエリパラメータ
@@ -78,7 +78,7 @@ const withQueries = {
 
 const [, route] = createTypedPathBuilder(withQueries);
 
-route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" })._build(); // => "/foo/id?param1=value1&param3=value3"
+route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" }).build(); // => "/foo/id?param1=value1&param3=value3"
 ```
 
 `_queries` は route builder で関数となり、引数で型安全にクエリパラメータのオブジェクトを受け付けます。

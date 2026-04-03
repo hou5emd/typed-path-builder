@@ -6,7 +6,10 @@ export function createPathBuilder<T extends RouteConfig>(config: T): PathBuilder
 }
 
 export class PathBuilderImpl {
-  constructor(private path: string, config: RouteConfig) {
+  constructor(
+    private path: string,
+    config: RouteConfig,
+  ) {
     const entries = Object.entries(config);
 
     entries.forEach(([key, value]) => {
@@ -15,7 +18,7 @@ export class PathBuilderImpl {
     });
   }
 
-  _build(): string {
+  build(): string {
     return this.path === "" ? "/" : this.path;
   }
 }

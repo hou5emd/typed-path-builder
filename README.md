@@ -48,7 +48,7 @@ The end of the URL puts an empty object (`{}`). Also, if you want to deal with p
 The `path` object received above is an object that generates path information based on `config`.
 
 ```ts
-path.foo.fooId.bar._build() // => "/foo/:fooId/bar"
+path.foo.fooId.bar.build() // => "/foo/:fooId/bar"
 ```
 
 ### route builder
@@ -57,7 +57,7 @@ The `route` object received above is an object that generates route information 
 Properties that start with `":"`, such as `":fooId"`, are functions in the route builder.
 
 ```ts
-route.foo.fooId("id")._build() // => "/foo/id"
+route.foo.fooId("id").build() // => "/foo/id"
 ```
 
 ## query parameters
@@ -79,7 +79,7 @@ const withQueries = {
 
 const [, route] = createTypedPathBuilder(withQueries);
 
-route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" })._build(); // => "/foo/id?param1=value1&param3=value3"
+route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" }).build(); // => "/foo/id?param1=value1&param3=value3"
 ```
 
 `_queries` becomes a function in the route builder and accepts a query parameter object as an argument type-safely.
