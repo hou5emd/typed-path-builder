@@ -21,4 +21,31 @@ export class PathBuilderImpl {
   build(): string {
     return this.path === "" ? "/" : this.path;
   }
+
+  relativeTo(base: { build(): string }): { build(): string } {
+    return {
+      build: () => {
+        const targetPath = this.build();
+        const basePath = base.build();
+
+        if (targetPath === basePath) {
+          return "";
+        }
+
+        if (basePath === "/") {
+          return targetPath.slice(1);
+        }
+
+        const relativePrefix = `${basePath}/`;
+
+        if (!targetPath.startsWith(relativePrefix)) {
+          throw new Error(
+            `Cannot build relative path from "${basePath}" to "${targetPath}" because the base path is not an ancestor of the target path.`,
+          );
+        }
+
+        return targetPath.slice(relativePrefix.length);
+      },
+    };
+  }
 }

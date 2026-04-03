@@ -10,6 +10,24 @@ type QueryArgs<T extends Query> = { [K in keyof T]?: string };
 type Query = { [path in string | number]: {} };
 
 type Builder<T extends string = string> = { build: () => T };
+type RelativeBuilder<T extends string = string> = { build: () => T };
+type StripLeadingSlash<T extends string> = T extends `/${infer Rest}` ? Rest : T;
+type RelativePath<
+  TargetPath extends string,
+  BasePath extends string,
+> = TargetPath extends BasePath
+  ? ""
+  : BasePath extends "/"
+    ? StripLeadingSlash<TargetPath>
+    : TargetPath extends `${BasePath}/${infer Rest}`
+      ? Rest
+      : string;
+type RelativePathBuilder<T extends string = string> = { build: () => T };
+type PathNode<T extends string = string> = Builder<T> & {
+  relativeTo: <BasePath extends string>(
+    base: RelativeBuilder<BasePath>,
+  ) => RelativePathBuilder<RelativePath<T, BasePath>>;
+};
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I,
@@ -88,7 +106,7 @@ type _PathBuilder<
     : Key extends `:${infer N}`
       ? {
           readonly [M in N]: {
-            [K in keyof (Builder<`${Path}/${Key}`> &
+            [K in keyof (PathNode<`${Path}/${Key}`> &
               UnionToIntersection<
                 _PathBuilder<
                   Config[Key],
@@ -97,7 +115,7 @@ type _PathBuilder<
                   DeepLength,
                   [0, ...DeepLengthArr]
                 >
-              >)]: (Builder<`${Path}/${Key}`> &
+              >)]: (PathNode<`${Path}/${Key}`> &
               UnionToIntersection<
                 _PathBuilder<
                   Config[Key],
@@ -112,7 +130,7 @@ type _PathBuilder<
       : Key extends string | number
         ? {
             readonly [M in Key]: {
-              [K in keyof (Builder<`${Path}/${Key}`> &
+              [K in keyof (PathNode<`${Path}/${Key}`> &
                 UnionToIntersection<
                   _PathBuilder<
                     Config[Key],
@@ -121,7 +139,7 @@ type _PathBuilder<
                     DeepLength,
                     [0, ...DeepLengthArr]
                   >
-                >)]: (Builder<`${Path}/${Key}`> &
+                >)]: (PathNode<`${Path}/${Key}`> &
                 UnionToIntersection<
                   _PathBuilder<
                     Config[Key],
@@ -135,5 +153,5 @@ type _PathBuilder<
           }
         : never;
 
-export type PathBuilder<Config extends RouteConfig> = Builder<"/"> &
+export type PathBuilder<Config extends RouteConfig> = PathNode<"/"> &
   UnionToIntersection<_PathBuilder<Config>>;
