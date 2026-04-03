@@ -2,50 +2,44 @@ import { PathBuilder, RouteConfig } from "./types";
 import * as lib from "./lib";
 
 export function createPathBuilder<T extends RouteConfig>(config: T): PathBuilder<T> {
-  return new PathBuilderImpl("", config) as any;
+  return new PathBuilderImpl("", config, false) as any;
 }
 
 export class PathBuilderImpl {
+  readonly relativeTo?: (base: PathBuilderImpl) => PathBuilderImpl;
+
   constructor(
     private path: string,
-    config: RouteConfig,
+    private config: RouteConfig,
+    private isRelative: boolean,
   ) {
+    if (!this.isRelative && this.path === "") {
+      this.relativeTo = base => new PathBuilderImpl("", base.config, true);
+    }
+
     const entries = Object.entries(config);
 
     entries.forEach(([key, value]) => {
-      // @ts-ignore
-      this[lib.trimColon(key)] = new PathBuilderImpl(path + "/" + key, value);
+      const nextPath = this.createChildPath(key);
+      Object.assign(this, {
+        [lib.trimColon(key)]: new PathBuilderImpl(nextPath, value, this.isRelative),
+      });
     });
   }
 
-  build(): string {
-    return this.path === "" ? "/" : this.path;
+  _build(): string {
+    if (this.path !== "") {
+      return this.path;
+    }
+
+    return this.isRelative ? "" : "/";
   }
 
-  relativeTo(base: { build(): string }): { build(): string } {
-    return {
-      build: () => {
-        const targetPath = this.build();
-        const basePath = base.build();
+  private createChildPath(segment: string): string {
+    if (this.path === "") {
+      return this.isRelative ? segment : `/${segment}`;
+    }
 
-        if (targetPath === basePath) {
-          return "";
-        }
-
-        if (basePath === "/") {
-          return targetPath.slice(1);
-        }
-
-        const relativePrefix = `${basePath}/`;
-
-        if (!targetPath.startsWith(relativePrefix)) {
-          throw new Error(
-            `Cannot build relative path from "${basePath}" to "${targetPath}" because the base path is not an ancestor of the target path.`,
-          );
-        }
-
-        return targetPath.slice(relativePrefix.length);
-      },
-    };
+    return `${this.path}/${segment}`;
   }
 }

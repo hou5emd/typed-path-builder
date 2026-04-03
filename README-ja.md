@@ -2,7 +2,10 @@
 
 シンプルなオブジェクトから静的に型付けがされた path を生成します。例えば `react-router` などで `path` を指定する場合に、事前に定義した URL 情報を typo することなく入力することが可能になります。
 
+このプロジェクトは [y-hiraoka/typed-path-builder](https://github.com/y-hiraoka/typed-path-builder) のフォークです。
+
 [Engilish](./README.md)
+
 ## 使い方
 
 ### config object の定義
@@ -47,11 +50,11 @@ URL の終端は空のオブジェクト (`{}`) を置きます。また path pa
 上で受け取った `path` オブジェクトは、`config` を基にパス情報を生成するオブジェクトです。
 
 ```ts
-path.foo.fooId.bar.build() // => "/foo/:fooId/bar"
-path.foo.fooId.bar.relativeTo(path.foo).build() // => ":fooId/bar"
+path.foo.fooId.bar._build(); // => "/foo/:fooId/bar"
+path.relativeTo(path.foo).fooId.bar._build(); // => ":fooId/bar"
 ```
 
-`relativeTo(base)` は builder のみを返すため、`.build()` の直前で使用します。
+`relativeTo(base)` は `base` から始まる相対パス builder を返すため、その後は `base` 配下のノードだけを辿れます。
 
 ### route builder
 
@@ -59,7 +62,7 @@ path.foo.fooId.bar.relativeTo(path.foo).build() // => ":fooId/bar"
 `":fooId"` のような `":"` から始まるプロパティは route builder では関数になります。
 
 ```ts
-route.foo.fooId("id").build() // => "/foo/id"
+route.foo.fooId("id")._build(); // => "/foo/id"
 ```
 
 ## クエリパラメータ
@@ -81,7 +84,7 @@ const withQueries = {
 
 const [, route] = createTypedPathBuilder(withQueries);
 
-route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" }).build(); // => "/foo/id?param1=value1&param3=value3"
+route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" })._build(); // => "/foo/id?param1=value1&param3=value3"
 ```
 
 `_queries` は route builder で関数となり、引数で型安全にクエリパラメータのオブジェクトを受け付けます。

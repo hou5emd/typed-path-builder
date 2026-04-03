@@ -14,35 +14,38 @@ class RouteBuilderImpl {
 
     entries.forEach(([key, value]) => {
       if (lib.isParameter(key)) {
-        // @ts-ignore
-        this[lib.trimColon(key)] = function (parameter: string) {
-          return new RouteBuilderImpl(
-            `${this.path}${this.path === "/" ? "" : "/"}${parameter}`,
-            value,
-          );
-        };
+        Object.assign(this, {
+          [lib.trimColon(key)]: (parameter: string) => {
+            return new RouteBuilderImpl(
+              `${this.path}${this.path === "/" ? "" : "/"}${parameter}`,
+              value,
+            );
+          },
+        });
       } else if (key === "_queries") {
-        // @ts-ignore
-        this[key] = function (params: Record<string, string>) {
-          const paramsString = new URLSearchParams(
-            lib.removeNullish(params) as any,
-          ).toString();
-          const pathWithParam = `${this.path}${
-            paramsString === "" ? "" : `?${paramsString}`
-          }`;
-          return new RouteBuilderImpl(pathWithParam, {});
-        };
+        Object.assign(this, {
+          [key]: (params: Record<string, string>) => {
+            const paramsString = new URLSearchParams(
+              lib.removeNullish(params),
+            ).toString();
+            const pathWithParam = `${this.path}${
+              paramsString === "" ? "" : `?${paramsString}`
+            }`;
+            return new RouteBuilderImpl(pathWithParam, {});
+          },
+        });
       } else {
-        // @ts-ignore
-        this[key] = new RouteBuilderImpl(
-          `${this.path}${this.path === "/" ? "" : "/"}${key}`,
-          value,
-        );
+        Object.assign(this, {
+          [key]: new RouteBuilderImpl(
+            `${this.path}${this.path === "/" ? "" : "/"}${key}`,
+            value,
+          ),
+        });
       }
     });
   }
 
-  build(): string {
+  _build(): string {
     return this.path;
   }
 }

@@ -2,6 +2,8 @@
 
 Генерирует типизированные path- и route-builder'ы из простого config object. Это удобно при работе с роутерами вроде `react-router`, когда хочется описывать URL один раз и дальше не собирать строки вручную.
 
+Этот проект является форком [y-hiraoka/typed-path-builder](https://github.com/y-hiraoka/typed-path-builder).
+
 [English](./README.md)
 [日本語](./README-ja.md)
 
@@ -49,11 +51,11 @@ const [path, route] = createTypedPathBuilder(routeConfig);
 Объект `path` генерирует шаблонные пути на основе config.
 
 ```ts
-path.foo.fooId.bar.build() // => "/foo/:fooId/bar"
-path.foo.fooId.bar.relativeTo(path.foo).build() // => ":fooId/bar"
+path.foo.fooId.bar._build(); // => "/foo/:fooId/bar"
+path.relativeTo(path.foo).fooId.bar._build(); // => ":fooId/bar"
 ```
 
-`relativeTo(base)` возвращает только builder, поэтому использовать его нужно непосредственно перед `.build()`.
+`relativeTo(base)` собирает путь относительно `base`, поэтому после него доступны только потомки `base`.
 
 ### Route builder
 
@@ -61,7 +63,7 @@ path.foo.fooId.bar.relativeTo(path.foo).build() // => ":fooId/bar"
 Свойства, которые начинаются с `":"`, например `":fooId"`, в route builder становятся функциями.
 
 ```ts
-route.foo.fooId("id").build() // => "/foo/id"
+route.foo.fooId("id")._build(); // => "/foo/id"
 ```
 
 ## Query parameters
@@ -83,7 +85,7 @@ const withQueries = {
 
 const [, route] = createTypedPathBuilder(withQueries);
 
-route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" }).build(); // => "/foo/id?param1=value1&param3=value3"
+route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" })._build(); // => "/foo/id?param1=value1&param3=value3"
 ```
 
 `_queries` становится функцией в route builder и типобезопасно принимает объект query-параметров.

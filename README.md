@@ -2,6 +2,8 @@
 
 Generate statically typed path and route builders from a simple config object. This is useful when working with routers such as `react-router`, where you want predefined URL structures without string typos.
 
+This project is a fork of [y-hiraoka/typed-path-builder](https://github.com/y-hiraoka/typed-path-builder).
+
 [Русский](./README-ru.md)
 [日本語](./README-ja.md)
 
@@ -49,11 +51,11 @@ Use an empty object (`{}`) for terminal segments. If you need path parameters, s
 The `path` object generates template paths from the config.
 
 ```ts
-path.foo.fooId.bar.build() // => "/foo/:fooId/bar"
-path.foo.fooId.bar.relativeTo(path.foo).build() // => ":fooId/bar"
+path.foo.fooId.bar._build(); // => "/foo/:fooId/bar"
+path.relativeTo(path.foo).fooId.bar._build(); // => ":fooId/bar"
 ```
 
-`relativeTo(base)` returns only a builder, so it should be used directly before `.build()`.
+`relativeTo(base)` starts a relative path builder from `base`, so only descendants of `base` are available afterwards.
 
 ### Route builder
 
@@ -61,7 +63,7 @@ The `route` object generates concrete routes from the config.
 Properties that start with `":"`, such as `":fooId"`, become functions in the route builder.
 
 ```ts
-route.foo.fooId("id").build() // => "/foo/id"
+route.foo.fooId("id")._build(); // => "/foo/id"
 ```
 
 ## Query parameters
@@ -83,7 +85,7 @@ const withQueries = {
 
 const [, route] = createTypedPathBuilder(withQueries);
 
-route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" }).build(); // => "/foo/id?param1=value1&param3=value3"
+route.foo.fooId("id")._queries({ param1: "value1", param3: "value3" })._build(); // => "/foo/id?param1=value1&param3=value3"
 ```
 
 `_queries` becomes a function in the route builder and accepts a query parameter object in a type-safe way.

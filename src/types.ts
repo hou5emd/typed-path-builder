@@ -1,5 +1,5 @@
 export type RouteConfig<
-  DeepLength extends number = 100,
+  DeepLength extends number = 50,
   DeepLengthArr extends number[] = [0],
 > = DeepLengthArr["length"] extends DeepLength
   ? never
@@ -9,25 +9,15 @@ type QueryArgs<T extends Query> = { [K in keyof T]?: string };
 
 type Query = { [path in string | number]: {} };
 
-type Builder<T extends string = string> = { build: () => T };
-type RelativeBuilder<T extends string = string> = { build: () => T };
-type StripLeadingSlash<T extends string> = T extends `/${infer Rest}` ? Rest : T;
-type RelativePath<
-  TargetPath extends string,
-  BasePath extends string,
-> = TargetPath extends BasePath
-  ? ""
-  : BasePath extends "/"
-    ? StripLeadingSlash<TargetPath>
-    : TargetPath extends `${BasePath}/${infer Rest}`
-      ? Rest
-      : string;
-type RelativePathBuilder<T extends string = string> = { build: () => T };
-type PathNode<T extends string = string> = Builder<T> & {
-  relativeTo: <BasePath extends string>(
-    base: RelativeBuilder<BasePath>,
-  ) => RelativePathBuilder<RelativePath<T, BasePath>>;
-};
+type Builder<T extends string = string> = { _build: () => T };
+type AppendAbsolutePath<
+  Path extends string,
+  Segment extends string | number,
+> = Path extends "/" ? `/${Segment}` : `${Path}/${Segment}`;
+type AppendRelativePath<
+  Path extends string,
+  Segment extends string | number,
+> = Path extends "" ? `${Segment}` : `${Path}/${Segment}`;
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I,
@@ -38,7 +28,7 @@ type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
 type _RouteBuilder<
   Config extends RouteConfig,
   Key extends keyof Config = keyof Config,
-  DeepLength extends number = 100,
+  DeepLength extends number = 50,
   DeepLengthArr extends number[] = [0],
 > = DeepLengthArr["length"] extends DeepLength
   ? never
@@ -93,11 +83,11 @@ type _RouteBuilder<
 export type RouteBuilder<T extends RouteConfig> = Builder &
   UnionToIntersection<_RouteBuilder<T>>;
 
-type _PathBuilder<
+type _AbsolutePathBuilder<
   Config extends RouteConfig,
   Key extends keyof Config = keyof Config,
-  Path extends string = "",
-  DeepLength extends number = 100,
+  Path extends string = "/",
+  DeepLength extends number = 50,
   DeepLengthArr extends number[] = [0],
 > = DeepLengthArr["length"] extends DeepLength
   ? never
@@ -105,53 +95,81 @@ type _PathBuilder<
     ? never
     : Key extends `:${infer N}`
       ? {
-          readonly [M in N]: {
-            [K in keyof (PathNode<`${Path}/${Key}`> &
-              UnionToIntersection<
-                _PathBuilder<
-                  Config[Key],
-                  keyof Config[Key],
-                  `${Path}/${Key}`,
-                  DeepLength,
-                  [0, ...DeepLengthArr]
-                >
-              >)]: (PathNode<`${Path}/${Key}`> &
-              UnionToIntersection<
-                _PathBuilder<
-                  Config[Key],
-                  keyof Config[Key],
-                  `${Path}/${Key}`,
-                  DeepLength,
-                  [0, ...DeepLengthArr]
-                >
-              >)[K];
-          };
+          readonly [M in N]: AbsolutePathNode<
+            AppendAbsolutePath<Path, Key>,
+            Config[Key],
+            DeepLength,
+            [0, ...DeepLengthArr]
+          >;
         }
       : Key extends string | number
         ? {
-            readonly [M in Key]: {
-              [K in keyof (PathNode<`${Path}/${Key}`> &
-                UnionToIntersection<
-                  _PathBuilder<
-                    Config[Key],
-                    keyof Config[Key],
-                    `${Path}/${Key}`,
-                    DeepLength,
-                    [0, ...DeepLengthArr]
-                  >
-                >)]: (PathNode<`${Path}/${Key}`> &
-                UnionToIntersection<
-                  _PathBuilder<
-                    Config[Key],
-                    keyof Config[Key],
-                    `${Path}/${Key}`,
-                    DeepLength,
-                    [0, ...DeepLengthArr]
-                  >
-                >)[K];
-            };
+            readonly [M in Key]: AbsolutePathNode<
+              AppendAbsolutePath<Path, Key>,
+              Config[Key],
+              DeepLength,
+              [0, ...DeepLengthArr]
+            >;
           }
         : never;
 
-export type PathBuilder<Config extends RouteConfig> = PathNode<"/"> &
-  UnionToIntersection<_PathBuilder<Config>>;
+type _RelativePathBuilder<
+  Config extends RouteConfig,
+  Key extends keyof Config = keyof Config,
+  Path extends string = "",
+  DeepLength extends number = 50,
+  DeepLengthArr extends number[] = [0],
+> = DeepLengthArr["length"] extends DeepLength
+  ? never
+  : Key extends "_queries"
+    ? never
+    : Key extends `:${infer N}`
+      ? {
+          readonly [M in N]: RelativePathNode<
+            AppendRelativePath<Path, Key>,
+            Config[Key],
+            DeepLength,
+            [0, ...DeepLengthArr]
+          >;
+        }
+      : Key extends string | number
+        ? {
+            readonly [M in Key]: RelativePathNode<
+              AppendRelativePath<Path, Key>,
+              Config[Key],
+              DeepLength,
+              [0, ...DeepLengthArr]
+            >;
+          }
+        : never;
+
+type AbsolutePathNode<
+  Path extends string,
+  Config extends RouteConfig,
+  DeepLength extends number = 50,
+  DeepLengthArr extends number[] = [0],
+> = Builder<Path> &
+  UnionToIntersection<
+    _AbsolutePathBuilder<Config, keyof Config, Path, DeepLength, DeepLengthArr>
+  >;
+
+type RelativePathNode<
+  Path extends string,
+  Config extends RouteConfig,
+  DeepLength extends number = 50,
+  DeepLengthArr extends number[] = [0],
+> = Builder<Path> &
+  UnionToIntersection<
+    _RelativePathBuilder<Config, keyof Config, Path, DeepLength, DeepLengthArr>
+  >;
+
+export type PathBuilder<Config extends RouteConfig> = AbsolutePathNode<"/", Config> & {
+  relativeTo: <
+    BasePath extends string,
+    BaseConfig extends RouteConfig,
+    DeepLength extends number = 50,
+    DeepLengthArr extends number[] = [0],
+  >(
+    base: AbsolutePathNode<BasePath, BaseConfig, DeepLength, DeepLengthArr>,
+  ) => RelativePathNode<"", BaseConfig, DeepLength, DeepLengthArr>;
+};
