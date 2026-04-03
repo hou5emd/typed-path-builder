@@ -48,7 +48,10 @@ URL の終端は空のオブジェクト (`{}`) を置きます。また path pa
 
 ```ts
 path.foo.fooId.bar.build() // => "/foo/:fooId/bar"
+path.foo.fooId.bar.relativeTo(path.foo).build() // => ":fooId/bar"
 ```
+
+`relativeTo(base)` は builder のみを返すため、`.build()` の直前で使用します。
 
 ### route builder
 
