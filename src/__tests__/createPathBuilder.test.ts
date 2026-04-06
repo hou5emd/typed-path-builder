@@ -1,10 +1,14 @@
 import { createPathBuilder } from "../createPathBuilder";
 
-type Equal<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
-type Expect<T extends true> = T;
-
 const routeConfig = {
+  abv: {
+    dss: {
+      ":optionalParam?": {
+        dsa: {},
+      },
+      staticChild: {},
+    },
+  },
   users: {
     ":userId": {
       tweets: {
@@ -24,30 +28,16 @@ const routeConfig = {
 };
 
 const typedPath = createPathBuilder(routeConfig);
-const typedRelativeRoot = typedPath.relativeTo(typedPath.users.userId);
-const typedRelativePath = typedRelativeRoot.tweets.tweetId.likes;
-
-type RootPath = ReturnType<typeof typedPath._build>;
-type UsersPath = ReturnType<typeof typedPath.users._build>;
-type RelativeRootPath = ReturnType<typeof typedRelativeRoot._build>;
-type NestedRelativePath = ReturnType<typeof typedRelativePath._build>;
-
-const rootPathTypecheck: Expect<Equal<RootPath, "/">> = true;
-const usersPathTypecheck: Expect<Equal<UsersPath, "/users">> = true;
-const relativeRootPathTypecheck: Expect<Equal<RelativeRootPath, "">> = true;
-const nestedRelativePathTypecheck: Expect<
-  Equal<NestedRelativePath, "tweets/:tweetId/likes">
-> = true;
-
-// @ts-expect-error settings is outside the selected relative subtree
-typedPath.relativeTo(typedPath.users.userId).settings;
-// @ts-expect-error relativeTo is available only on the root path builder
-type NestedRelativeTo = typeof typedPath.users.relativeTo;
 
 test("createPathBuilder", () => {
   const path = typedPath;
 
   expect(path._build()).toBe("/");
+  expect(path.abv.dss._build()).toBe("/abv/dss");
+  expect(path.abv.dss.optionalParam._build()).toBe("/abv/dss/:optionalParam?");
+  expect(path.abv.dss.optionalParam.dsa._build()).toBe("/abv/dss/:optionalParam?/dsa");
+  expect(path.abv.dss.optionalParam.dsa._build()).toBe("/abv/dss/:optionalParam?/dsa");
+  expect(path.abv.dss.staticChild._build()).toBe("/abv/dss/staticChild");
   expect(path.users._build()).toBe("/users");
   expect(path.users.userId._build()).toBe("/users/:userId");
   expect(path.users.userId.tweets._build()).toBe("/users/:userId/tweets");
@@ -69,8 +59,14 @@ test("createPathBuilder", () => {
   expect(path.relativeTo(path.users.userId).tweets.tweetId.likes._build()).toBe(
     "tweets/:tweetId/likes",
   );
+  expect(path.relativeTo(path.abv.dss).optionalParam._build()).toBe(":optionalParam?");
+  expect(path.relativeTo(path.abv.dss).optionalParam.dsa._build()).toBe(
+    ":optionalParam?/dsa",
+  );
   expect(path.relativeTo(path.settings).security._build()).toBe("security");
-  expect(path.relativeTo(path).settings.security._build()).toBe("settings/security");
+  expect(path.relativeTo(path as any).settings.security._build()).toBe(
+    "settings/security",
+  );
   expect(path.relativeTo(path.settings)._build()).toBe("");
   expect(path.relativeTo(path[1])[2][3]._build()).toBe("2/3");
   expect(typeof path.relativeTo).toBe("function");

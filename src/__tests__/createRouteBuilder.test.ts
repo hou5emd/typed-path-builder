@@ -1,6 +1,14 @@
 import { createRouteBuilder } from "../createRouteBuilder";
 
 const routeConfig = {
+  abv: {
+    dss: {
+      ":optionalParam?": {
+        dsa: {},
+      },
+      staticChild: {},
+    },
+  },
   users: {
     ":userId": {
       tweets: {
@@ -25,10 +33,23 @@ const routeConfig = {
   1: { 2: { 3: { 4: { 5: {} } } } },
 };
 
+const typedRoute = createRouteBuilder(routeConfig);
+const typedOptionalRoute = typedRoute.abv.dss.optionalParam();
+
+// @ts-expect-error required route params must stay required
+typedRoute.users.userId();
+
 test("createRouteBuilder", () => {
-  const route = createRouteBuilder(routeConfig);
+  const route = typedRoute;
 
   expect(route._build()).toBe("/");
+  expect(typedOptionalRoute._build()).toBe("/abv/dss");
+  expect(route.abv.dss._build()).toBe("/abv/dss");
+  expect(route.abv.dss.optionalParam()._build()).toBe("/abv/dss");
+  expect(route.abv.dss.optionalParam().dsa._build()).toBe("/abv/dss/dsa");
+  expect(route.abv.dss.optionalParam("value")._build()).toBe("/abv/dss/value");
+  expect(route.abv.dss.optionalParam("value").dsa._build()).toBe("/abv/dss/value/dsa");
+  expect(route.abv.dss.staticChild._build()).toBe("/abv/dss/staticChild");
   expect(route.users._build()).toBe("/users");
   expect(route.users.userId("user000")._build()).toBe("/users/user000");
   expect(route.users.userId("user000").tweets._build()).toBe("/users/user000/tweets");

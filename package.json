@@ -22,7 +22,7 @@
   "scripts": {
     "prepare": "husky",
     "format": "prettier --write '**/*.{js,ts}'",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
     "build": "rslib build",
     "dev": "rslib build --watch",
     "test": "rstest run"

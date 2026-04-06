@@ -13,7 +13,16 @@ class RouteBuilderImpl {
     const entries = Object.entries(config);
 
     entries.forEach(([key, value]) => {
-      if (lib.isParameter(key)) {
+      if (lib.isOptionalParameter(key)) {
+        Object.assign(this, {
+          [lib.trimColon(key)]: (parameter?: string) => {
+            const pathWithParam = parameter
+              ? `${this.path}${this.path === "/" ? "" : "/"}${parameter}`
+              : this.path;
+            return new RouteBuilderImpl(pathWithParam, value);
+          },
+        });
+      } else if (lib.isParameter(key)) {
         Object.assign(this, {
           [lib.trimColon(key)]: (parameter: string) => {
             return new RouteBuilderImpl(

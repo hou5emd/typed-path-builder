@@ -2,8 +2,20 @@ export function isParameter(text: string): text is `:${string}` {
   return text.slice(0, 1) === ":";
 }
 
+export function isOptionalParameter(text: string): text is `:${string}?` {
+  return isParameter(text) && text.slice(-1) === "?";
+}
+
 export function trimColon(text: string) {
-  return isParameter(text) ? text.slice(1) : text;
+  if (isOptionalParameter(text)) {
+    return text.slice(1, -1);
+  }
+
+  if (isParameter(text)) {
+    return text.slice(1);
+  }
+
+  return text;
 }
 
 export function removeNullish<T extends Record<string | number | symbol, unknown>>(

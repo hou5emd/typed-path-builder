@@ -8,8 +8,20 @@ test("isParameter returns false.", () => {
   expect(lib.isParameter("hogeId")).toBe(false);
 });
 
+test("isOptionalParameter returns true.", () => {
+  expect(lib.isOptionalParameter(":optionalParam?")).toBe(true);
+});
+
+test("isOptionalParameter returns false.", () => {
+  expect(lib.isOptionalParameter(":optionalParam")).toBe(false);
+});
+
 test("trimColon trims a colon.", () => {
   expect(lib.trimColon(":hogeId")).toBe("hogeId");
+});
+
+test("trimColon trims an optional parameter suffix.", () => {
+  expect(lib.trimColon(":optionalParam?")).toBe("optionalParam");
 });
 
 test("trimColon trims nothing.", () => {
