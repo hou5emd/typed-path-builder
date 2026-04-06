@@ -34,13 +34,11 @@ const routeConfig = {
 };
 
 const typedRoute = createRouteBuilder(routeConfig);
-const typedOptionalRoute = typedRoute.abv.dss.optionalParam();
 
 test("createRouteBuilder", () => {
   const route = typedRoute;
 
   expect(route._build()).toBe("/");
-  expect(typedOptionalRoute._build()).toBe("/abv/dss");
   expect(route.abv.dss._build()).toBe("/abv/dss");
   expect(route.abv.dss.optionalParam()._build()).toBe("/abv/dss");
   expect(route.abv.dss.optionalParam().dsa._build()).toBe("/abv/dss/dsa");
@@ -66,9 +64,9 @@ test("createRouteBuilder", () => {
       .likes._queries({ param1: "parameter1", param3: "parameter3" })
       ._build(),
   ).toBe("/users/user000/likes?param1=parameter1&param3=parameter3");
-  expect(route.users.userId("user000").likes._queries({ param1: "1" })._build()).toBe(
-    "/users/user000/likes",
-  );
+  expect(
+    route.users.userId("user000").likes._queries({ param1: "414214" })._build(),
+  ).toBe("/users/user000/likes?param1=414214");
   expect(route.settings._build()).toBe("/settings");
   expect(route.settings.security._build()).toBe("/settings/security");
   expect(route.settings.privacies._build()).toBe("/settings/privacies");

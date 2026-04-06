@@ -6,6 +6,54 @@ type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) exten
   ? I
   : never;
 
+type QueryKey = string | number;
+
+type LastOfUnion<T extends QueryKey> =
+  UnionToIntersection<T extends unknown ? (arg: T) => void : never> extends (
+    arg: infer Last,
+  ) => void
+    ? Extract<Last, QueryKey>
+    : never;
+
+type UnionToTuple<T extends QueryKey, Last extends QueryKey = LastOfUnion<T>> = [
+  T,
+] extends [never]
+  ? []
+  : [...UnionToTuple<Exclude<T, Last>>, Last];
+
+type AppendQueryPart<
+  Current extends string,
+  Key extends QueryKey,
+  Value extends string,
+> = Current extends "" ? `${Key}=${Value}` : `${Current}&${Key}=${Value}`;
+
+type BuildQueryString<
+  Keys extends readonly unknown[],
+  Queries extends Partial<Record<QueryKey, string>>,
+  Current extends string = "",
+> = Keys extends [infer Key extends QueryKey, ...infer Rest]
+  ? Key extends keyof Queries
+    ? BuildQueryString<
+        Rest,
+        Queries,
+        AppendQueryPart<Current, Key, Queries[Key] & string>
+      >
+    : BuildQueryString<Rest, Queries, Current>
+  : Current;
+
+type BuildPathWithQuery<
+  Path extends string,
+  Queries extends Partial<Record<QueryKey, string>>,
+> =
+  BuildQueryString<
+    UnionToTuple<Extract<keyof Queries, QueryKey>>,
+    Queries
+  > extends infer Query extends string
+    ? Query extends ""
+      ? Path
+      : `${Path}?${Query}`
+    : never;
+
 type GetByPath<
   T extends RouteConfig,
   P extends string,
@@ -57,7 +105,7 @@ export type RouteBuilder<
             Queries extends { [Q in keyof T[M]]?: V },
           >(
             queries: Queries,
-          ) => Builder<`${Path}?${keyof Queries extends infer Q ? (Q extends string | number ? `${Q}=${Queries[Q]}` : never) : never}`>;
+          ) => Builder<BuildPathWithQuery<Path, Queries>>;
         }
       : K extends `:${infer N}?`
         ? {
