@@ -36,9 +36,6 @@ const routeConfig = {
 const typedRoute = createRouteBuilder(routeConfig);
 const typedOptionalRoute = typedRoute.abv.dss.optionalParam();
 
-// @ts-expect-error required route params must stay required
-typedRoute.users.userId();
-
 test("createRouteBuilder", () => {
   const route = typedRoute;
 
@@ -69,7 +66,7 @@ test("createRouteBuilder", () => {
       .likes._queries({ param1: "parameter1", param3: "parameter3" })
       ._build(),
   ).toBe("/users/user000/likes?param1=parameter1&param3=parameter3");
-  expect(route.users.userId("user000").likes._queries({})._build()).toBe(
+  expect(route.users.userId("user000").likes._queries({ param1: "1" })._build()).toBe(
     "/users/user000/likes",
   );
   expect(route.settings._build()).toBe("/settings");

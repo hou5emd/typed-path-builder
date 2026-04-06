@@ -1,23 +1,4 @@
-export type RouteConfig<
-  DeepLength extends number = 50,
-  DeepLengthArr extends number[] = [0],
-> = DeepLengthArr["length"] extends DeepLength
-  ? never
-  : { [path in string | number]: RouteConfig<DeepLength, [0, ...DeepLengthArr]> };
-
-type QueryArgs<T extends Query> = { [K in keyof T]?: string };
-
-type Query = { [path in string | number]: {} };
-
 type Builder<T extends string = string> = { _build: () => T };
-type AppendAbsolutePath<
-  Path extends string,
-  Segment extends string | number,
-> = Path extends "/" ? `/${Segment}` : `${Path}/${Segment}`;
-type AppendRelativePath<
-  Path extends string,
-  Segment extends string | number,
-> = Path extends "" ? `${Segment}` : `${Path}/${Segment}`;
 
 type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
   k: infer I,
@@ -25,191 +6,125 @@ type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) exten
   ? I
   : never;
 
-type _RouteBuilder<
-  Config extends RouteConfig,
-  Key extends keyof Config = keyof Config,
+type GetByPath<
+  T extends RouteConfig,
+  P extends string,
+> = P extends `/${infer Key}/${infer Rest}`
+  ? Key extends keyof T
+    ? GetByPath<T[Key], `/${Rest}`>
+    : never
+  : P extends `/${infer Key}`
+    ? T[Key]
+    : never;
+
+export type RouteConfig<
   DeepLength extends number = 50,
   DeepLengthArr extends number[] = [0],
 > = DeepLengthArr["length"] extends DeepLength
   ? never
-  : Key extends "_queries"
-    ? {
-        readonly [M in Key]: (queries: QueryArgs<Config[Key]>) => Builder;
-      }
-    : Key extends `:${infer N}?`
-      ? {
-          readonly [M in N]: (parameter?: string) => {
-            [K in keyof (Builder &
-              UnionToIntersection<
-                _RouteBuilder<
-                  Config[Key],
-                  keyof Config[Key],
-                  DeepLength,
-                  [0, ...DeepLengthArr]
-                >
-              >)]: (Builder &
-              UnionToIntersection<
-                _RouteBuilder<
-                  Config[Key],
-                  keyof Config[Key],
-                  DeepLength,
-                  [0, ...DeepLengthArr]
-                >
-              >)[K];
-          };
-        }
-      : Key extends `:${infer N}`
-        ? {
-            readonly [M in N]: (parameter: string) => {
-              [K in keyof (Builder &
-                UnionToIntersection<
-                  _RouteBuilder<
-                    Config[Key],
-                    keyof Config[Key],
-                    DeepLength,
-                    [0, ...DeepLengthArr]
-                  >
-                >)]: (Builder &
-                UnionToIntersection<
-                  _RouteBuilder<
-                    Config[Key],
-                    keyof Config[Key],
-                    DeepLength,
-                    [0, ...DeepLengthArr]
-                  >
-                >)[K];
-            };
-          }
-        : {
-            readonly [M in Key]: {
-              [K in keyof (Builder &
-                UnionToIntersection<
-                  _RouteBuilder<
-                    Config[Key],
-                    keyof Config[Key],
-                    DeepLength,
-                    [0, ...DeepLengthArr]
-                  >
-                >)]: (Builder &
-                UnionToIntersection<
-                  _RouteBuilder<
-                    Config[Key],
-                    keyof Config[Key],
-                    DeepLength,
-                    [0, ...DeepLengthArr]
-                  >
-                >)[K];
-            };
-          };
+  : {
+      [Path in string | number]: Path extends "_queries"
+        ? {}
+        : RouteConfig<DeepLength, [0, ...DeepLengthArr]>;
+    };
 
-export type RouteBuilder<T extends RouteConfig> = Builder &
-  UnionToIntersection<_RouteBuilder<T>>;
+export type PathString<
+  Current extends string | number,
+  NextPath extends string | number,
+  RelativeTo extends string | number = "",
+> = RelativeTo extends ""
+  ? Current extends "/"
+    ? `/${NextPath}`
+    : `${Current}/${NextPath}`
+  : Current extends "/"
+    ? `${NextPath}`
+    : `${Current}/${NextPath}` extends `${RelativeTo}${infer Rest}`
+      ? Rest
+      : Current extends ""
+        ? `${NextPath}`
+        : `${Current}/${NextPath}`;
 
-type _AbsolutePathBuilder<
-  Config extends RouteConfig,
-  Key extends keyof Config = keyof Config,
-  Path extends string = "/",
-  DeepLength extends number = 50,
-  DeepLengthArr extends number[] = [0],
-> = DeepLengthArr["length"] extends DeepLength
-  ? never
-  : Key extends "_queries"
-    ? never
-    : Key extends `:${infer N}?`
-      ? {
-          readonly [M in N]: AbsolutePathNode<
-            AppendAbsolutePath<Path, Key>,
-            Config[Key],
-            DeepLength,
-            [0, ...DeepLengthArr]
-          >;
-        }
-      : Key extends `:${infer N}`
-        ? {
-            readonly [M in N]: AbsolutePathNode<
-              AppendAbsolutePath<Path, Key>,
-              Config[Key],
-              DeepLength,
-              [0, ...DeepLengthArr]
-            >;
-          }
-        : Key extends string | number
-          ? {
-              readonly [M in Key]: AbsolutePathNode<
-                AppendAbsolutePath<Path, Key>,
-                Config[Key],
-                DeepLength,
-                [0, ...DeepLengthArr]
-              >;
-            }
-          : never;
-
-type _RelativePathBuilder<
-  Config extends RouteConfig,
-  Key extends keyof Config = keyof Config,
+export type RouteBuilder<
+  T extends RouteConfig,
+  K extends keyof T = keyof T,
   Path extends string = "",
-  DeepLength extends number = 50,
-  DeepLengthArr extends number[] = [0],
-> = DeepLengthArr["length"] extends DeepLength
-  ? never
-  : Key extends "_queries"
-    ? never
-    : Key extends `:${infer N}?`
+> = Builder<Path> &
+  UnionToIntersection<
+    K extends "_queries"
       ? {
-          readonly [M in N]: RelativePathNode<
-            AppendRelativePath<Path, Key>,
-            Config[Key],
-            DeepLength,
-            [0, ...DeepLengthArr]
-          >;
+          readonly [M in K]: <
+            V extends string,
+            Queries extends { [Q in keyof T[M]]?: V },
+          >(
+            queries: Queries,
+          ) => Builder<`${Path}?${keyof Queries extends infer Q ? (Q extends string | number ? `${Q}=${Queries[Q]}` : never) : never}`>;
         }
-      : Key extends `:${infer N}`
+      : K extends `:${infer N}?`
         ? {
-            readonly [M in N]: RelativePathNode<
-              AppendRelativePath<Path, Key>,
-              Config[Key],
-              DeepLength,
-              [0, ...DeepLengthArr]
+            readonly [M in N]: <Param extends string>(
+              parameter?: Param,
+            ) => RouteBuilder<T[K], keyof T[K], PathString<Path, Param>>;
+          }
+        : K extends `:${infer N}`
+          ? {
+              readonly [M in N]: <Param extends string>(
+                parameter: Param,
+              ) => RouteBuilder<T[K], keyof T[K], PathString<Path, Param>>;
+            }
+          : K extends string | number
+            ? {
+                readonly [M in K]: RouteBuilder<T[K], keyof T[K], PathString<Path, K>>;
+              }
+            : never
+  >;
+
+export type PathBuilder<
+  Config extends RouteConfig,
+  ConfigKey extends keyof Config = keyof Config,
+  Path extends string = "/",
+  RelativeToPath extends string = "",
+> = Builder<Path> &
+  UnionToIntersection<
+    ConfigKey extends "_queries"
+      ? never
+      : ConfigKey extends `:${infer N}?`
+        ? {
+            readonly [M in N]: PathBuilder<
+              Config[ConfigKey],
+              keyof Config[ConfigKey],
+              PathString<Path, ConfigKey, RelativeToPath>
             >;
           }
-        : Key extends string | number
+        : ConfigKey extends `:${infer N}`
           ? {
-              readonly [M in Key]: RelativePathNode<
-                AppendRelativePath<Path, Key>,
-                Config[Key],
-                DeepLength,
-                [0, ...DeepLengthArr]
+              readonly [M in N]: PathBuilder<
+                Config[ConfigKey],
+                keyof Config[ConfigKey],
+                PathString<Path, ConfigKey, RelativeToPath>
               >;
             }
+          : ConfigKey extends string | number
+            ? {
+                readonly [M in ConfigKey]: PathBuilder<
+                  Config[ConfigKey],
+                  keyof Config[ConfigKey],
+                  PathString<Path, ConfigKey, RelativeToPath>
+                >;
+              }
+            : never
+  > &
+  (Path extends "/"
+    ? {
+        relativeTo: <PB extends Builder>(
+          base: PB,
+        ) => PB extends Builder<infer BasePath>
+          ? BasePath extends "/"
+            ? PathBuilder<Config, ConfigKey, "", "/">
+            : GetByPath<Config, BasePath> extends infer NewConfig
+              ? NewConfig extends RouteConfig
+                ? PathBuilder<NewConfig, keyof NewConfig, "", BasePath>
+                : never
+              : never
           : never;
-
-type AbsolutePathNode<
-  Path extends string,
-  Config extends RouteConfig,
-  DeepLength extends number = 50,
-  DeepLengthArr extends number[] = [0],
-> = Builder<Path> &
-  UnionToIntersection<
-    _AbsolutePathBuilder<Config, keyof Config, Path, DeepLength, DeepLengthArr>
-  >;
-
-type RelativePathNode<
-  Path extends string,
-  Config extends RouteConfig,
-  DeepLength extends number = 50,
-  DeepLengthArr extends number[] = [0],
-> = Builder<Path> &
-  UnionToIntersection<
-    _RelativePathBuilder<Config, keyof Config, Path, DeepLength, DeepLengthArr>
-  >;
-
-export type PathBuilder<Config extends RouteConfig> = AbsolutePathNode<"/", Config> & {
-  relativeTo: <
-    BasePath extends string,
-    BaseConfig extends RouteConfig,
-    DeepLength extends number = 50,
-    DeepLengthArr extends number[] = [0],
-  >(
-    base: AbsolutePathNode<BasePath, BaseConfig, DeepLength, DeepLengthArr>,
-  ) => RelativePathNode<"", BaseConfig, DeepLength, DeepLengthArr>;
-};
+      }
+    : {});

@@ -64,11 +64,11 @@ test("createPathBuilder", () => {
     ":optionalParam?/dsa",
   );
   expect(path.relativeTo(path.settings).security._build()).toBe("security");
-  expect(path.relativeTo(path as any).settings.security._build()).toBe(
-    "settings/security",
-  );
+  expect(path.relativeTo(path).settings.security._build()).toBe("settings/security");
   expect(path.relativeTo(path.settings)._build()).toBe("");
   expect(path.relativeTo(path[1])[2][3]._build()).toBe("2/3");
   expect(typeof path.relativeTo).toBe("function");
-  expect((path.users as any).relativeTo).toBeUndefined();
+  expect(
+    (path.users as unknown as { relativeTo: undefined })?.relativeTo,
+  ).toBeUndefined();
 });
